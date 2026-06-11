@@ -318,24 +318,32 @@ with st.spinner("Đang giải bài toán…"):
             it_p1 = 1
             while it_p1 <= 30:
                 st_p1, jin_p1, iout_p1 = l.tim_phan_tu_truc_don_hinh_goc(C_d, D_p1, B)
-                if st_p1 != "PIVOT": break
                 
-                # --- LẬP LUẬN CHỌN BIẾN PHA 1 ---
-                ratios_str = []
-                for i, d_row in enumerate(D_p1):
-                    if d_row[jin_p1] < 0:
-                        ratio_val = B[i] / abs(d_row[jin_p1])
-                        ratios_str.append(f"${basic[i]}: \\frac{{{l.format_frac(B[i])}}}{{{l.format_frac(abs(d_row[jin_p1]))}}} = {l.format_frac(ratio_val)}$")
-                
-                giai_thich = f"**Lập luận bước {it_p1}:**\n- **Biến vào:** Chọn ${non_p1[jin_p1]}$ do có hệ số âm ở hàm mục tiêu.\n"
-                if ratios_str:
-                    giai_thich += f"- **Biến ra:** Xét tỷ số $(b / |d|)$: " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[iout_p1]}$ (tỷ số nhỏ nhất)."
-                st.success(giai_thich)
-                # ---------------------------------
-                
-                show_step(badge(f"Pha 1 · Bước {it_p1}", "phase1"), l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1, is_p1=True))
-                v_d, C_d, D_p1, B, basic, non_p1 = l.thuc_hien_phep_xoay(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1)
-                it_p1 += 1
+                # BỔ SUNG: In ra Từ vựng tối ưu của Pha 1 trước khi kết thúc
+                if st_p1 == "OPTIMAL":
+                    show_step(badge("Pha 1 · Tối Ưu", "optimal"), l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, is_p1=True))
+                    st.success(f"Kết thúc Pha 1. Giá trị tối ưu $\\delta^* = {l.format_frac(v_d)}$. Biến giả tạo $x_0$ đã rời khỏi cơ sở.")
+                    break
+                    
+                elif st_p1 == "PIVOT":
+                    # --- LẬP LUẬN CHỌN BIẾN PHA 1 ---
+                    ratios_str = []
+                    for i, d_row in enumerate(D_p1):
+                        if d_row[jin_p1] < 0:
+                            ratio_val = B[i] / abs(d_row[jin_p1])
+                            ratios_str.append(f"${basic[i]}: \\frac{{{l.format_frac(B[i])}}}{{{l.format_frac(abs(d_row[jin_p1]))}}} = {l.format_frac(ratio_val)}$")
+                    
+                    giai_thich = f"**Lập luận bước {it_p1}:**\n- **Biến vào:** Chọn mũi tên xuống tại ${non_p1[jin_p1]}$ do có hệ số âm ở hàm mục tiêu $\\delta$.\n"
+                    if ratios_str:
+                        giai_thich += f"- **Biến ra:** Xét tỷ số $(b / |d|)$: " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[iout_p1]}$ (tỷ số nhỏ nhất)."
+                    st.info(giai_thich)
+                    # ---------------------------------
+                    
+                    show_step(badge(f"Pha 1 · Bước {it_p1}", "phase1"), l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1, is_p1=True))
+                    v_d, C_d, D_p1, B, basic, non_p1 = l.thuc_hien_phep_xoay(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1)
+                    it_p1 += 1
+                else:
+                    break
 
             if abs(float(v_d)) > 1e-9:
                 error_html(f"Pha 1 kết thúc với $\\delta^* = {l.format_frac(v_d)} \\neq 0$ $\\rightarrow$ Bài toán VÔ NGHIỆM.")
