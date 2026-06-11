@@ -131,3 +131,56 @@ def trich_xuat_nghiem(B, basic_vars, non_basic_vars, num_goc):
             idx = basic_vars.index(ten_x)
             nghiem.append(format_frac(B[idx]))
     return nghiem
+
+def tim_phan_tu_truc_doi_ngau(C, D, B):
+    """Tìm biến vào/ra theo Đơn hình Đối ngẫu (Dual Simplex)"""
+    # 1. Biến ra (chọn trước): b_i âm nhất
+    min_b = Fraction(0)
+    i_out = -1
+    for i, b_val in enumerate(B):
+        if b_val < min_b:
+            min_b = b_val
+            i_out = i
+            
+    if i_out == -1:
+        return "FEASIBLE", -1, -1 # Đã khả thi, trở lại Đơn hình gốc
+        
+    # 2. Biến vào (chọn sau): Tỷ số C[j] / |D[i_out][j]| nhỏ nhất (chỉ xét D > 0)
+    min_ratio = None
+    j_in = -1
+    for j, d_val in enumerate(D[i_out]):
+        if d_val > Fraction(0):
+            ratio = C[j] / d_val
+            if min_ratio is None or ratio < min_ratio:
+                min_ratio = ratio
+                j_in = j
+                
+    if j_in == -1:
+        return "INFEASIBLE", -1, -1 # Hệ thống báo bài toán Vô nghiệm
+        
+    return "PIVOT", j_in, i_out
+
+def khoi_tao_pha_1(D, non_basic_vars):
+    """Thiết lập Từ vựng Pha 1: Thêm x_0 và tạo hàm delta"""
+    non_basic_new = list(non_basic_vars) + ["x_0"]
+    # Thêm hệ số +1 cho x_0 ở tất cả các phương trình (Dấu +x_0)
+    D_new = [row + [Fraction(1)] for row in D]
+    
+    # Hàm mục tiêu tạm thời delta = 0 - x_0
+    C_delta = [Fraction(0)] * len(non_basic_vars) + [Fraction(-1)]
+    v_delta = Fraction(0)
+    
+    return v_delta, C_delta, D_new, non_basic_new
+
+def buoc_xoay_khoi_tao_pha_1(B, non_basic_vars):
+    """Bước xoay khởi tạo bắt buộc: Biến vào là x_0, biến ra là b_i âm nhất"""
+    j_in = len(non_basic_vars) - 1 # Vị trí của x_0 (nằm cuối cùng)
+    
+    min_b = Fraction(0)
+    i_out = -1
+    for i, b_val in enumerate(B):
+        if b_val < min_b:
+            min_b = b_val
+            i_out = i
+            
+    return j_in, i_out
