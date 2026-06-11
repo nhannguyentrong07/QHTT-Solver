@@ -1,44 +1,39 @@
 import streamlit as st
-from logic import chuan_hoa_va_tao_tu_vung, tao_latex_tu_vung_xuat_phat
+from logic import khoi_tao_tu_vung_phan_so, tim_phan_tu_truc_don_hinh_goc, tao_latex_tu_vung_hien_tai
 
 st.set_page_config(layout="wide", page_title="QHTT Chvátal Solver")
 st.title("Chương trình Giải QHTT - Phương pháp Từ Vựng")
 
-# --- Giả lập Input Đề Bài ---
-# Ví dụ: Max Z, có ràng buộc >= và = để test hệ thống phân giải
-c_input = [3, 2]            # Hàm mục tiêu Max z = 3x1 + 2x2
-A_input = [[1, 2], [1, -1], [2, 1]]
-b_input = [4, 1, 6]
-is_min = False              # Đang là Max
-dau_input = ['<=', '>=', '=']
+# Giả lập Đề bài đã chuẩn hóa: Khả thi (b >= 0), dạng Min, cần 1 bước xoay
+# Min z = -3x1 - 2x2
+# w1 = 4 - 1x1 - 2x2
+# w2 = 12 - 3x1 - 1x2
+c_input = [-3, -2] 
+A_input = [[1, 2], [3, 1]] 
+b_input = [4, 12]
 
-st.write("### 1. Đề bài gốc:")
-st.latex(r"\text{Max} \quad Z = 3x_1 + 2x_2")
-st.latex(r"1x_1 + 2x_2 \le 4")
-st.latex(r"1x_1 - 1x_2 \ge 1")
-st.latex(r"2x_1 + 1x_2 = 6")
-st.latex(r"x_1, x_2 \ge 0")
+# Khởi tạo định danh biến
+non_basic = ["x_1", "x_2"]
+basic = ["w_1", "w_2"]
 
-# --- Xử lý Thuật toán ---
-c_std, A_std, b_std, giai_thich, is_max = chuan_hoa_va_tao_tu_vung(
-    c_input, A_input, b_input, is_min, dau_input
-)
+# Tiền xử lý thành Phân số
+v, C, D, B = khoi_tao_tu_vung_phan_so(c_input, A_input, b_input)
 
-st.write("---")
-st.write("### 2. Tiền xử lý Dạng chuẩn:")
-for cau in giai_thich:
-    st.info(cau)
+st.write("### 1. Từ vựng xuất phát:")
+st.latex(tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic))
+
+# --- BƯỚC CHỌN PHẦN TỬ TRỤC ---
+status, j_in, i_out = tim_phan_tu_truc_don_hinh_goc(C, D, B)
 
 st.write("---")
-st.write("### 3. Từ vựng xuất phát (Initial Dictionary):")
-st.write("Hệ thống tự động thêm các biến bù $w_i \ge 0$ để tạo hệ phương trình:")
-
-# Gọi hàm tạo LaTeX
-latex_tu_vung = tao_latex_tu_vung_xuat_phat(c_std, A_std, b_std, is_max)
-st.latex(latex_tu_vung)
-
-# Cảnh báo định tuyến (Smart Routing Trigger)
-if any(val < 0 for val in b_std):
-    st.warning("Hệ thống nhận diện: $b_i < 0$. Từ vựng xuất phát KHÔNG khả thi. Sẽ cần kích hoạt Phương pháp Hai Pha (Two-Phase) hoặc Đơn hình Đối ngẫu (Dual Simplex) ở bước tiếp theo.")
-else:
-    st.success("Hệ thống nhận diện: Từ vựng khả thi. Đủ điều kiện kích hoạt Đơn hình Gốc (Primal Simplex).")
+if status == "PIVOT":
+    st.write(f"### 2. Xoay đơn hình lần 1 (Biến vào ${non_basic[j_in]}$, biến ra ${basic[i_out]}$):")
+    st.info(f"Hệ thống tự động quét hàm mục tiêu chọn {non_basic[j_in]} do có hệ số âm. Tỷ số ràng buộc nhỏ nhất dẫn đến việc đẩy {basic[i_out]} ra khỏi cơ sở.")
+    
+    # In lại từ vựng cũ với các mũi tên và khung đánh dấu
+    st.latex(tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic, j_in, i_out))
+    
+elif status == "OPTIMAL":
+    st.success("Từ vựng tối ưu. Không cần thực hiện phép xoay.")
+elif status == "UNBOUNDED":
+    st.error("Bài toán không giới nội, $z \\to -\\infty$.")
