@@ -30,22 +30,47 @@ st.sidebar.write("### 2. Hệ số các ràng buộc (A, dấu, b)")
 A_input = []
 b_input = []
 dau_input = []
+st.sidebar.write("---")
+st.sidebar.write("### 2. Hệ số các ràng buộc (A, dấu, b)")
+A_input = []
+b_input = []
+dau_input = []
 
 for i in range(num_constraints):
     st.sidebar.write(f"**Ràng buộc {i+1}:**")
-    row_A = []
-    col1, col2, col3 = st.sidebar.columns([2, 2, 2])
     
+    # Co giãn số cột linh hoạt theo số biến + 1 (dấu) + 1 (vế phải)
+    cols = st.sidebar.columns(num_vars + 2)
+    row_A = []
+    
+    # Nhập hệ số cho từng biến x_1 ... x_n
     for j in range(num_vars):
-        with col1 if j == 0 else col3: # Đơn giản hóa chia cột nhập liệu
-            v_A = st.number_input(f"Hệ số x_{j+1} (R{i+1})", value=float(1.0 if i==j else 0.5), step=0.5, key=f"A_{i}_{j}")
+        with cols[j]:
+            v_A = st.number_input(
+                f"x_{j+1}", 
+                value=float(1.0 if i == j else 0.0), 
+                step=0.5, 
+                key=f"A_{i}_{j}"
+            )
         row_A.append(v_A)
         
-    with col2:
-        d = st.selectbox(f"Dấu R{i+1}", ["<=", ">=", "="], key=f"dau_{i}")
+    # Chọn dấu bất đẳng thức
+    with cols[num_vars]:
+        d = st.selectbox(
+            "Dấu", 
+            ["<=", ">=", "="], 
+            key=f"dau_{i}"
+        )
         
-    v_b = st.number_input(f"Vế phải b_{i+1}", value=float(4.0 + i), step=1.0, key=f"b_{i}")
-    
+    # Nhập vế phải (b)
+    with cols[num_vars + 1]:
+        v_b = st.number_input(
+            "Vế phải", 
+            value=float(4.0 + i), 
+            step=1.0, 
+            key=f"b_{i}"
+        )
+        
     A_input.append(row_A)
     dau_input.append(d)
     b_input.append(v_b)
