@@ -346,7 +346,7 @@ with st.spinner("Đang giải bài toán…"):
                     break
 
             if abs(float(v_d)) > 1e-9:
-                error_html(f"Pha 1 kết thúc với $\\delta^* = {l.format_frac(v_d)} \\neq 0$ $\\rightarrow$ Bài toán VÔ NGHIỆM.")
+                error_html(f"**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**<br><br>**Giải thích toán học:** Pha 1 kết thúc nhưng $\\delta^* = {l.format_frac(v_d)} \\neq 0$. Điều này chứng tỏ không thể ép biến giả tạo $x_0$ về $0$, tức là hệ bất phương trình ràng buộc ban đầu có mâu thuẫn lẫn nhau (miền nghiệm rỗng).")
                 st.stop()
 
             v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std, exp_names)
@@ -376,6 +376,11 @@ with st.spinner("Đang giải bài toán…"):
 
             if status == "OPTIMAL":
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+                
+                # --- THÊM LẬP LUẬN TỐI ƯU ---
+                st.success("**Lập luận kết thúc:** Toàn bộ hệ số của các biến phi cơ sở trên hàm mục tiêu đều $\\ge 0$. Ta không thể chọn được biến vào nào để làm giảm thêm giá trị của $z$ $\\rightarrow$ Hệ thống đã đạt trạng thái **Tối Ưu**.")
+                # ----------------------------
+                
                 show_step(badge("✅ Tối ưu", "optimal"), l.tao_latex_tu_vung(v, C, D, B, basic, non_basic))
                 
                 res_raw = []
@@ -440,12 +445,17 @@ with st.spinner("Đang giải bài toán…"):
                 show_step(badge(label, kind), l.tao_latex_tu_vung(v, C, D, B, basic, non_basic, j_in, i_out, is_dual=mode_dual))
                 v, C, D, B, basic, non_basic = l.thuc_hien_phep_xoay(v, C, D, B, basic, non_basic, j_in, i_out)
                 it += 1
+                
             else:
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-                if status == "UNBOUNDED": error_html("Bài toán KHÔNG GIỚI NỘI — hàm mục tiêu tiến đến $\\pm\\infty$.")
-                elif status == "INFEASIBLE": error_html("Bài toán VÔ NGHIỆM — miền chấp nhận được rỗng.")
-                else: error_html(f"Trạng thái không xác định: <code>{status}</code>.")
+                if status == "UNBOUNDED": 
+                    error_html("**Kết luận: Bài toán KHÔNG GIỚI NỘI (Unbounded)**<br>Hàm mục tiêu $z \\to -\\infty$.<br><br>**Giải thích toán học:** Đã chọn được biến vào, nhưng xét trong các phương trình ràng buộc, toàn bộ hệ số của biến đó đều mang dấu cộng ($+$). Ta có thể tăng biến này lên vô tận mà không làm bất kỳ biến cơ sở nào bị âm (không vi phạm ràng buộc).")
+                elif status == "INFEASIBLE": 
+                    error_html("**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**<br>Miền chấp nhận được rỗng.<br><br>**Giải thích toán học:** Xét tại dòng của biến ra (có vế phải âm), toàn bộ hệ số của các biến phi cơ sở đều mang dấu trừ ($-$) hoặc bằng $0$. Không có biến nào có khả năng làm biến vào để xoay và bù đắp vi phạm này.")
+                else: 
+                    error_html(f"Trạng thái không xác định: <code>{status}</code>.")
                 break
+                
         else:
             error_html("Vượt quá 50 bước lặp — có thể xảy ra hiện tượng lặp vòng (cycling).")
 
