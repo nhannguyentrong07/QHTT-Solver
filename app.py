@@ -131,21 +131,15 @@ st.markdown("""
 #  HÀM TIỆN ÍCH: ĐỊNH DẠNG SỐ CHO ĐỀ BÀI
 # ══════════════════════════════════════════════════
 def fmt(val):
-    """Bỏ .0 cho số nguyên, giữ số thập phân nếu cần"""
     return f"{val:g}"
 
 def build_linear_expr(coeffs, var_names, show_zero=False):
-    """Xây dựng chuỗi ax₁ + bx₂ + … (bỏ số 0, rút gọn ±1)"""
     terms = []
     for c, var in zip(coeffs, var_names):
-        if c == 0 and not show_zero:
-            continue
+        if c == 0 and not show_zero: continue
         abs_c = abs(c)
-        if abs_c == 1:
-            coef_str = ""
-        else:
-            coef_str = fmt(abs_c)
-        if not terms:          # Hạng tử đầu tiên
+        coef_str = "" if abs_c == 1 else fmt(abs_c)
+        if not terms: 
             sign = "-" if c < 0 else ""
             terms.append(f"{sign}{coef_str}{var}")
         else:
@@ -153,41 +147,39 @@ def build_linear_expr(coeffs, var_names, show_zero=False):
             terms.append(f"{sign}{coef_str}{var}")
     return "".join(terms) if terms else "0"
 
+def buoc_xoay_khoi_tao_pha_1(B, non_p1):
+    """Hàm bổ trợ an toàn để đảm bảo lấy x_0 làm phần tử trục cho Pha 1"""
+    j_in = len(non_p1) - 1 
+    min_b = Fraction(0)
+    i_out = -1
+    for i, b_val in enumerate(B):
+        if b_val < min_b:
+            min_b = b_val
+            i_out = i
+    return j_in, i_out
+
 # ══════════════════════════════════════════════════
 #  CHUẨN HOÁ ĐẦU VÀO
 # ══════════════════════════════════════════════════
 def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
-    """
-    Chuẩn hoá về dạng Min z = cᵀx,  Ax ≤ b.
-    Xử lý: Max→Min, ≥→≤, biến tự do x = x⁺ − x⁻, biến ≤ 0: x = −x′.
-    Trả về (c_std, A_std, b_std, notes, new_var_names).
-    """
     notes = []
     n = len(c_in)
-
-    # ── Xử lý điều kiện biến ──────────────────────
-    # var_cond[j] ∈ {"≥ 0", "≤ 0", "Tự do"}
-    # Xây dựng danh sách cột mở rộng
-    c_exp   = []   # Hệ số mở rộng
+    c_exp   = [] 
     A_exp   = [[] for _ in range(len(A_in))]
-    names   = []   # Tên biến mở rộng (dùng khi hiển thị)
+    names   = [] 
 
     for j in range(n):
         cond = var_cond[j]
         if cond == "≥ 0":
             c_exp.append(c_in[j])
-            for i in range(len(A_in)):
-                A_exp[i].append(A_in[i][j])
+            for i in range(len(A_in)): A_exp[i].append(A_in[i][j])
             names.append(f"x_{{{j+1}}}")
         elif cond == "≤ 0":
-            # Thay x_j = −x_j′  (x_j′ ≥ 0)
             c_exp.append(-c_in[j])
-            for i in range(len(A_in)):
-                A_exp[i].append(-A_in[i][j])
+            for i in range(len(A_in)): A_exp[i].append(-A_in[i][j])
             names.append(f"x_{{{j+1}}}'")
             notes.append(f"x_{j+1} ≤ 0 → đặt x_{j+1} = −x_{j+1}′ (x_{j+1}′ ≥ 0).")
-        else:  # Tự do
-            # Thay x_j = x_j⁺ − x_j⁻  (cả hai ≥ 0)
+        else:
             c_exp.append( c_in[j])
             c_exp.append(-c_in[j])
             for i in range(len(A_in)):
@@ -197,14 +189,12 @@ def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
             names.append(f"x_{{{j+1}}}^-")
             notes.append(f"x_{j+1} tự do → đặt x_{j+1} = x_{j+1}⁺ − x_{j+1}⁻.")
 
-    # ── Max → Min ────────────────────────────────
     if not is_min:
         c_std = [-v for v in c_exp]
         notes.append("Đổi Max → Min: nhân hàm mục tiêu với −1.")
     else:
         c_std = list(c_exp)
 
-    # ── Chuẩn hoá dấu ràng buộc ──────────────────
     A_std, b_std = [], []
     for i, (row, dau, bi) in enumerate(zip(A_exp, dau_in, b_in)):
         if dau == "<=":
@@ -212,10 +202,9 @@ def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
         elif dau == ">=":
             A_std.append([-v for v in row]); b_std.append(-bi)
             notes.append(f"Ràng buộc {i+1}: '≥' → nhân −1 để thành '≤'.")
-        else:  # "="
+        else:
             A_std.append(list(row)); b_std.append(bi)
             notes.append(f"Ràng buộc {i+1}: '=' — xử lý trong từ vựng.")
-
     return c_std, A_std, b_std, notes, names
 
 # ══════════════════════════════════════════════════
@@ -223,45 +212,25 @@ def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
 # ══════════════════════════════════════════════════
 def hien_thi_de_bai(obj_type, c_in, A_in, b_in, dau_in, var_cond, num_vars):
     var_names_tex = [f"x_{{{j+1}}}" for j in range(num_vars)]
-
-    # Hàm mục tiêu
     obj_expr = build_linear_expr(c_in, var_names_tex)
     obj_line = rf"{obj_type}\; z = {obj_expr}"
-
-    # Ràng buộc
     con_lines = []
     dau_map = {"<=": r"\leq", ">=": r"\geq", "=": "="}
     for i, (row, dau, bi) in enumerate(zip(A_in, dau_in, b_in)):
         lhs = build_linear_expr(row, var_names_tex)
         con_lines.append(rf"{lhs} & {dau_map[dau]} & {fmt(bi)}")
-
-    # Điều kiện biến
     groups = {"≥ 0": [], "≤ 0": [], "Tự do": []}
     for j, cond in enumerate(var_cond):
         groups[cond].append(f"x_{{{j+1}}}")
     cond_lines = []
-    if groups["≥ 0"]:
-        cond_lines.append(", ".join(groups["≥ 0"]) + r" \geq 0")
-    if groups["≤ 0"]:
-        cond_lines.append(", ".join(groups["≤ 0"]) + r" \leq 0")
-    if groups["Tự do"]:
-        cond_lines.append(", ".join(groups["Tự do"]) + r"\; \text{tự do}")
-
-    # Ghép LaTeX
+    if groups["≥ 0"]: cond_lines.append(", ".join(groups["≥ 0"]) + r" \geq 0")
+    if groups["≤ 0"]: cond_lines.append(", ".join(groups["≤ 0"]) + r" \leq 0")
+    if groups["Tự do"]: cond_lines.append(", ".join(groups["Tự do"]) + r"\; \text{tự do}")
     rows_tex = " \\\\ ".join(con_lines)
     cond_tex = " \\\\ ".join(cond_lines) if cond_lines else ""
-
-    latex = (
-        r"\begin{aligned}"
-        rf"& {obj_line} \\"
-        r"& \text{s.t.} \begin{cases}"
-        + rows_tex +
-        r"\end{cases} \\"
-    )
-    if cond_tex:
-        latex += rf"& {cond_tex}"
+    latex = (r"\begin{aligned}" rf"& {obj_line} \\" r"& \text{s.t.} \begin{cases}" + rows_tex + r"\end{cases} \\")
+    if cond_tex: latex += rf"& {cond_tex}"
     latex += r"\end{aligned}"
-
     return latex
 
 # ══════════════════════════════════════════════════
@@ -280,12 +249,9 @@ with st.sidebar:
     c_in = []
     coef_cols = st.columns(min(num_vars, 4))
     for j in range(num_vars):
-        val = coef_cols[j % len(coef_cols)].number_input(
-            f"c_{j+1}", value=0.0, step=1.0, key=f"c{j}"
-        )
+        val = coef_cols[j % len(coef_cols)].number_input(f"c_{j+1}", value=0.0, step=1.0, key=f"c{j}")
         c_in.append(val)
 
-    # Preview hàm mục tiêu
     var_names_prev = [f"x<sub>{j+1}</sub>" for j in range(num_vars)]
     parts = []
     for j, v in enumerate(c_in):
@@ -295,24 +261,16 @@ with st.sidebar:
         coef = "" if abs_v == 1 else f"{abs_v:g}"
         parts.append(f"{sg}{coef}{var_names_prev[j]}")
     preview_expr = "".join(parts) if parts else "0"
-    st.markdown(
-        f'<div class="obj-preview">{obj_type} z = {preview_expr}</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f'<div class="obj-preview">{obj_type} z = {preview_expr}</div>', unsafe_allow_html=True)
 
-    # ── Điều kiện biến ──────────────────────────
     st.markdown("---")
     st.markdown('<div class="sb-title">🔒 Điều kiện biến</div>', unsafe_allow_html=True)
     var_cond = []
     cond_cols = st.columns(min(num_vars, 3))
     for j in range(num_vars):
-        cond = cond_cols[j % len(cond_cols)].selectbox(
-            f"x_{j+1}", ["≥ 0", "≤ 0", "Tự do"],
-            key=f"cond{j}", index=0
-        )
+        cond = cond_cols[j % len(cond_cols)].selectbox(f"x_{j+1}", ["≥ 0", "≤ 0", "Tự do"], key=f"cond{j}", index=0)
         var_cond.append(cond)
 
-    # ── Ràng buộc ───────────────────────────────
     st.markdown("---")
     st.markdown('<div class="sb-title">📋 Ràng buộc</div>', unsafe_allow_html=True)
     A_in, b_in, dau_in = [], [], []
@@ -321,33 +279,14 @@ with st.sidebar:
         row_cols = st.columns(num_vars + 2)
         row = []
         for j in range(num_vars):
-            v2 = row_cols[j].number_input(
-                f"x{j+1}", value=0.0, step=1.0, key=f"A{i}{j}",
-                label_visibility="visible"
-            )
+            v2 = row_cols[j].number_input(f"x{j+1}", value=0.0, step=1.0, key=f"A{i}{j}", label_visibility="visible")
             row.append(v2)
-        dau = row_cols[num_vars].selectbox(
-            "dấu", ["<=", ">=", "="], key=f"d{i}", label_visibility="collapsed"
-        )
-        val_b = row_cols[num_vars+1].number_input(
-            "b", value=0.0, step=1.0, key=f"b{i}", label_visibility="visible"
-        )
+        dau = row_cols[num_vars].selectbox("dấu", ["<=", ">=", "="], key=f"d{i}", label_visibility="collapsed")
+        val_b = row_cols[num_vars+1].number_input("b", value=0.0, step=1.0, key=f"b{i}", label_visibility="visible")
         A_in.append(row); b_in.append(val_b); dau_in.append(dau)
 
     st.markdown("---")
     solve_clicked = st.button("🚀  GIẢI BÀI TOÁN", use_container_width=True)
-
-    with st.expander("📖 Hướng dẫn"):
-        st.markdown("""
-**Điều kiện biến:**
-- `≥ 0` — biến không âm (mặc định)
-- `≤ 0` — biến không dương (tự đổi dấu)
-- `Tự do` — không hạn chế (tách thành x⁺ − x⁻)
-
-**Hỗ trợ tự động:**
-- Max ↔ Min, ≥ ↔ ≤
-- Đơn hình gốc / Đối ngẫu / Hai Pha
-        """)
 
 # ══════════════════════════════════════════════════
 #  MÀN HÌNH CHỜ
@@ -367,13 +306,10 @@ if not solve_clicked:
 # ══════════════════════════════════════════════════
 def badge(label, kind="pivot"):
     return f'<span class="step-badge {kind}">{label}</span>'
-
 def note_html(text):
     st.markdown(f'<div class="info-note">ℹ️ {text}</div>', unsafe_allow_html=True)
-
 def error_html(text):
     st.markdown(f'<div class="error-box">⚠️ {text}</div>', unsafe_allow_html=True)
-
 def show_step(badge_html, latex_str):
     st.markdown(f'<div class="step-card">{badge_html}', unsafe_allow_html=True)
     st.latex(latex_str)
@@ -405,24 +341,21 @@ with st.spinner("Đang giải bài toán…"):
         c_std, A_std, b_std, notes, exp_names = chuan_hoa_dau_vao(
             c_in, A_in, b_in, obj_type == "Min", dau_in, var_cond
         )
-        num_exp = len(c_std)   # Số biến sau mở rộng
+        num_exp = len(c_std) 
 
         # ── Khởi tạo từ vựng ─────────────────────────────────
         v, C, D, B = l.khoi_tao_tu_vung_phan_so(c_std, A_std, b_std)
         non_basic = [exp_names[j] for j in range(num_exp)]
         basic     = [f"w_{{{i+1}}}" for i in range(len(b_std))]
 
-        # Ghi chú chuẩn hoá
-        for n in notes:
-            note_html(n)
+        for n in notes: note_html(n)
 
-        # Từ vựng xuất phát
+        # Từ vựng xuất phát (Đã sửa tên hàm l.tao_latex_tu_vung)
         show_step(
             badge("Từ vựng xuất phát", "init"),
-            l.tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic)
+            l.tao_latex_tu_vung(v, C, D, B, basic, non_basic)
         )
 
-        # ── Phân loại phương pháp ─────────────────────────────
         is_feasible    = all(x >= 0 for x in B)
         is_optimal_obj = all(x >= 0 for x in C)
         mode_dual      = (not is_feasible and is_optimal_obj)
@@ -434,12 +367,11 @@ with st.spinner("Đang giải bài toán…"):
             note_html("Vi phạm cả tính khả thi lẫn tối ưu → Kích hoạt Hai Pha.")
 
             v_d, C_d, D_p1, non_p1 = l.khoi_tao_pha_1(D, non_basic)
-            j_in_init, i_out_init   = l.buoc_xoay_khoi_tao_pha_1(B, non_p1)
+            j_in_init, i_out_init   = buoc_xoay_khoi_tao_pha_1(B, non_p1)
 
             show_step(
                 badge("Pha 1 · Xoay khởi tạo x₀", "phase1"),
-                l.tao_latex_tu_vung_hien_tai(v_d, C_d, D_p1, B, basic, non_p1,
-                                             j_in_init, i_out_init)
+                l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, j_in_init, i_out_init, is_p1=True)
             )
             v_d, C_d, D_p1, B, basic, non_p1 = l.thuc_hien_phep_xoay(
                 v_d, C_d, D_p1, B, basic, non_p1, j_in_init, i_out_init
@@ -448,12 +380,10 @@ with st.spinner("Đang giải bài toán…"):
             it_p1 = 1
             while it_p1 <= 30:
                 st_p1, jin_p1, iout_p1 = l.tim_phan_tu_truc_don_hinh_goc(C_d, D_p1, B)
-                if st_p1 != "PIVOT":
-                    break
+                if st_p1 != "PIVOT": break
                 show_step(
                     badge(f"Pha 1 · Bước {it_p1}", "phase1"),
-                    l.tao_latex_tu_vung_hien_tai(v_d, C_d, D_p1, B, basic, non_p1,
-                                                 jin_p1, iout_p1)
+                    l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1, is_p1=True)
                 )
                 v_d, C_d, D_p1, B, basic, non_p1 = l.thuc_hien_phep_xoay(
                     v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1
@@ -461,16 +391,16 @@ with st.spinner("Đang giải bài toán…"):
                 it_p1 += 1
 
             if abs(float(v_d)) > 1e-9:
-                error_html(f"Pha 1 kết thúc với z₀ = {l.format_frac(v_d)} ≠ 0 "
-                           "→ Bài toán VÔ NGHIỆM.")
+                error_html(f"Pha 1 kết thúc với z₀ = {l.format_frac(v_d)} ≠ 0 → Bài toán VÔ NGHIỆM.")
                 st.stop()
 
-            v, C, D, non_basic = l.chuyen_tu_pha1_sang_pha2(D_p1, B, basic, non_p1, c_std)
+            # Đã sửa tên hàm l.chuyen_sang_pha2
+            v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std)
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### ⚙️ Pha 2 – Đơn Hình Gốc")
             show_step(
                 badge("Từ vựng đầu Pha 2", "init"),
-                l.tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic)
+                l.tao_latex_tu_vung(v, C, D, B, basic, non_basic)
             )
             mode_dual = False
 
@@ -497,48 +427,45 @@ with st.spinner("Đang giải bài toán…"):
             else:
                 status, j_in, i_out = l.tim_phan_tu_truc_don_hinh_goc(C, D, B)
 
-            # Tối ưu
             if status == "OPTIMAL":
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
                 show_step(
                     badge("✅ Tối ưu", "optimal"),
-                    l.tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic)
+                    l.tao_latex_tu_vung(v, C, D, B, basic, non_basic)
                 )
-                # Trích nghiệm theo biến gốc (trước khi mở rộng)
-                res_raw = l.trich_xuat_nghiem(B, basic, non_basic, num_exp)
+                
+                # Trích nghiệm chuẩn bằng Fractions trực tiếp, bỏ qua logic cũ bị lỗi
+                res_raw = []
+                for name in exp_names:
+                    if name in non_basic:
+                        res_raw.append(Fraction(0))
+                    else:
+                        idx = basic.index(name)
+                        res_raw.append(B[idx])
 
-                # Gộp lại nghiệm biến gốc (xử lý tự do x = x⁺ − x⁻, và ≤ 0: x = −x′)
                 nghiem_goc = {}
                 exp_idx = 0
                 for j in range(num_vars):
                     cond = var_cond[j]
                     if cond == "≥ 0":
-                        nghiem_goc[j] = Fraction(res_raw[exp_idx]) if res_raw[exp_idx] != "0" \
-                                        else Fraction(0)
+                        nghiem_goc[j] = res_raw[exp_idx]
                         exp_idx += 1
                     elif cond == "≤ 0":
-                        val_prime = Fraction(res_raw[exp_idx]) if res_raw[exp_idx] != "0" \
-                                    else Fraction(0)
-                        nghiem_goc[j] = -val_prime
+                        nghiem_goc[j] = -res_raw[exp_idx]
                         exp_idx += 1
                     else:  # Tự do
-                        vp = Fraction(res_raw[exp_idx])   if res_raw[exp_idx] != "0"   else Fraction(0)
-                        vm = Fraction(res_raw[exp_idx+1]) if res_raw[exp_idx+1] != "0" else Fraction(0)
-                        nghiem_goc[j] = vp - vm
+                        nghiem_goc[j] = res_raw[exp_idx] - res_raw[exp_idx+1]
                         exp_idx += 2
 
-                # Giá trị z theo bài toán gốc
                 z_min = v
                 z_display_val = (-z_min) if obj_type == "Max" else z_min
 
                 def frac_to_str(f):
-                    return str(f.numerator) if f.denominator == 1 \
-                           else f"{f.numerator}/{f.denominator}"
+                    return str(f.numerator) if f.denominator == 1 else f"{f.numerator}/{f.denominator}"
 
                 z_str   = frac_to_str(z_display_val)
                 vars_html = ",&nbsp; ".join(
-                    [f"x<sub>{j+1}</sub> = {frac_to_str(nghiem_goc[j])}"
-                     for j in range(num_vars)]
+                    [f"x<sub>{j+1}</sub> = {frac_to_str(nghiem_goc[j])}" for j in range(num_vars)]
                 )
                 if obj_type == "Max":
                     note_html("Bài toán gốc là Max: z* = −(z_min*)")
@@ -552,20 +479,18 @@ with st.spinner("Đang giải bài toán…"):
                 """, unsafe_allow_html=True)
                 break
 
-            # Xoay
             elif status == "PIVOT":
                 kind  = "dual" if mode_dual else "pivot"
                 label = f"Bước {it} · {'Đối ngẫu' if mode_dual else 'Đơn hình gốc'}"
                 show_step(
                     badge(label, kind),
-                    l.tao_latex_tu_vung_hien_tai(v, C, D, B, basic, non_basic, j_in, i_out)
+                    l.tao_latex_tu_vung(v, C, D, B, basic, non_basic, j_in, i_out, is_dual=mode_dual)
                 )
                 v, C, D, B, basic, non_basic = l.thuc_hien_phep_xoay(
                     v, C, D, B, basic, non_basic, j_in, i_out
                 )
                 it += 1
 
-            # Vô nghiệm / Không giới nội
             else:
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
                 if status == "UNBOUNDED":
@@ -576,7 +501,7 @@ with st.spinner("Đang giải bài toán…"):
                     error_html(f"Trạng thái không xác định: <code>{status}</code>.")
                 break
         else:
-            error_html("Vượt quá 50 bước lặp — có thể xảy ra hiện tượng đạp (cycling).")
+            error_html("Vượt quá 50 bước lặp — có thể xảy ra hiện tượng lặp vòng (cycling).")
 
     except Exception as e:
         error_html(f"Lỗi: <code>{e}</code>")
