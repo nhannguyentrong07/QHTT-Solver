@@ -157,34 +157,49 @@ def hien_thi_dang_chuan(c_std, A_std, b_std, exp_names):
         con_lines.append(rf"{lhs} & \leq & {l.format_frac(bi)}")
     rows_tex = " \\\\ ".join(con_lines)
     cond_tex = ", ".join(exp_names) + r" \geq 0"
-    latex = (
-        r"\begin{aligned} "
-        rf"& {obj_line} \\ "
-        r"& \text{s.t.} \begin{cases} "
-        rf"{rows_tex} "
-        r"\end{cases} \\ "
-        rf"& {cond_tex} "
-        r"\end{aligned}"
-    )
+    latex = (r"\begin{aligned} " rf"& {obj_line} \\ " r"& \text{s.t.} \begin{cases} " rf"{rows_tex} " r"\end{cases} \\ " rf"& {cond_tex} " r"\end{aligned}")
     return latex
+
+# ══════════════════════════════════════════════════
+#  KHO ĐỀ MẪU TỰ ĐỘNG
+# ══════════════════════════════════════════════════
+mau_dict = {
+    "Tự nhập bằng tay": None,
+    "1. Đơn hình gốc (Khả thi)": {"n": 2, "m": 2, "obj": "Min", "c": [-5.0, -4.0], "A": [[6.0, 4.0], [1.0, 2.0]], "b": [24.0, 6.0], "dau": ["<=", "<="], "cond": ["≥ 0", "≥ 0"]},
+    "2. Đối ngẫu (Chưa khả thi)": {"n": 2, "m": 2, "obj": "Min", "c": [3.0, 4.0], "A": [[-1.0, -2.0], [-3.0, -1.0]], "b": [-4.0, -6.0], "dau": ["<=", "<="], "cond": ["≥ 0", "≥ 0"]},
+    "3. Hai Pha (Vế phải âm)": {"n": 2, "m": 2, "obj": "Min", "c": [1.0, -1.0], "A": [[-1.0, -1.0], [2.0, -1.0]], "b": [-2.0, 2.0], "dau": ["<=", "<="], "cond": ["≥ 0", "≥ 0"]},
+    "4. Bài toán Vô Nghiệm": {"n": 2, "m": 2, "obj": "Min", "c": [2.0, 1.0], "A": [[1.0, 1.0], [-1.0, -1.0]], "b": [1.0, -3.0], "dau": ["<=", "<="], "cond": ["≥ 0", "≥ 0"]}
+}
 
 # ══════════════════════════════════════════════════
 #  SIDEBAR – NHẬP DỮ LIỆU
 # ══════════════════════════════════════════════════
 with st.sidebar:
+    st.markdown('<div class="sb-title" style="color:#d97706;">⚡ TẢI ĐỀ KIỂM TRA NHANH</div>', unsafe_allow_html=True)
+    chon_mau = st.selectbox("Chọn bài toán mẫu:", list(mau_dict.keys()), label_visibility="collapsed")
+    mau = mau_dict[chon_mau]
+    # Reset biến m, n theo mẫu
+    def_n = mau["n"] if mau else 2
+    def_m = mau["m"] if mau else 2
+
+    st.markdown("---")
     st.markdown('<div class="sb-title">📏 Kích thước</div>', unsafe_allow_html=True)
     col_n, col_m = st.columns(2)
-    num_vars = col_n.number_input("Số biến (n)", 1, 10, 2, step=1)
-    num_cons = col_m.number_input("Số ràng buộc (m)", 1, 10, 2, step=1)
+    # Thêm chon_mau vào key để ép Streamlit reset giá trị khi chọn mẫu mới
+    num_vars = col_n.number_input("Số biến (n)", 1, 10, def_n, step=1, key=f"n_{chon_mau}")
+    num_cons = col_m.number_input("Số ràng buộc (m)", 1, 10, def_m, step=1, key=f"m_{chon_mau}")
 
     st.markdown("---")
     st.markdown('<div class="sb-title">🎯 Hàm mục tiêu</div>', unsafe_allow_html=True)
-    obj_type = st.radio("Loại", ["Min", "Max"], horizontal=True, label_visibility="collapsed")
+    def_obj = mau["obj"] if mau else "Min"
+    idx_obj = 0 if def_obj == "Min" else 1
+    obj_type = st.radio("Loại", ["Min", "Max"], index=idx_obj, horizontal=True, key=f"obj_{chon_mau}", label_visibility="collapsed")
 
     c_in = []
     coef_cols = st.columns(min(num_vars, 4))
     for j in range(num_vars):
-        val = coef_cols[j % len(coef_cols)].number_input(f"c_{j+1}", value=0.0, step=1.0, key=f"c{j}")
+        def_c = mau["c"][j] if (mau and j < mau["n"]) else 0.0
+        val = coef_cols[j % len(coef_cols)].number_input(f"c_{j+1}", value=float(def_c), step=1.0, key=f"c{j}_{chon_mau}")
         c_in.append(val)
 
     var_names_prev = [f"x<sub>{j+1}</sub>" for j in range(num_vars)]
@@ -203,7 +218,9 @@ with st.sidebar:
     var_cond = []
     cond_cols = st.columns(min(num_vars, 3))
     for j in range(num_vars):
-        cond = cond_cols[j % len(cond_cols)].selectbox(f"x_{j+1}", ["≥ 0", "≤ 0", "Tự do"], key=f"cond{j}", index=0)
+        def_cond = mau["cond"][j] if (mau and j < mau["n"]) else "≥ 0"
+        idx_cond = ["≥ 0", "≤ 0", "Tự do"].index(def_cond)
+        cond = cond_cols[j % len(cond_cols)].selectbox(f"x_{j+1}", ["≥ 0", "≤ 0", "Tự do"], key=f"cond{j}_{chon_mau}", index=idx_cond)
         var_cond.append(cond)
 
     st.markdown("---")
@@ -211,14 +228,20 @@ with st.sidebar:
     A_in, b_in, dau_in = [], [], []
     for i in range(num_cons):
         st.markdown(f'<div class="con-label">Ràng buộc {i+1}</div>', unsafe_allow_html=True)
-        # Nới rộng tỷ lệ cột để Dấu và Vế phải hiện rõ chữ
         row_cols = st.columns([1]*num_vars + [1.5, 1.2]) 
         row = []
         for j in range(num_vars):
-            v2 = row_cols[j].number_input(f"x{j+1}", value=0.0, step=1.0, key=f"A{i}{j}", label_visibility="visible")
+            def_A = mau["A"][i][j] if (mau and i < mau["m"] and j < mau["n"]) else 0.0
+            v2 = row_cols[j].number_input(f"x{j+1}", value=float(def_A), step=1.0, key=f"A{i}{j}_{chon_mau}", label_visibility="visible")
             row.append(v2)
-        dau = row_cols[num_vars].selectbox("Dấu", ["<=", ">=", "="], key=f"d{i}", label_visibility="visible")
-        val_b = row_cols[num_vars+1].number_input("Vế phải", value=0.0, step=1.0, key=f"b{i}", label_visibility="visible")
+        
+        def_dau = mau["dau"][i] if (mau and i < mau["m"]) else "<="
+        idx_dau = ["<=", ">=", "="].index(def_dau)
+        dau = row_cols[num_vars].selectbox("Dấu", ["<=", ">=", "="], index=idx_dau, key=f"d{i}_{chon_mau}", label_visibility="visible")
+        
+        def_b = mau["b"][i] if (mau and i < mau["m"]) else 0.0
+        val_b = row_cols[num_vars+1].number_input("Vế phải", value=float(def_b), step=1.0, key=f"b{i}_{chon_mau}", label_visibility="visible")
+        
         A_in.append(row); b_in.append(val_b); dau_in.append(dau)
 
     st.markdown("---")
@@ -231,13 +254,12 @@ if not solve_clicked:
     st.markdown("""
     <div style="text-align:center;padding:5rem 2rem;color:#94a3b8;">
         <div style="font-size:3.5rem;margin-bottom:1rem;">📊</div>
-        <h3 style="color:#64748b;font-weight:500;">Nhập dữ liệu và nhấn <em>GIẢI BÀI TOÁN</em></h3>
+        <h3 style="color:#64748b;font-weight:500;">Chọn Đề Mẫu bên trái và nhấn <em>GIẢI BÀI TOÁN</em></h3>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
 
 def badge(label, kind="pivot"): return f'<span class="step-badge {kind}">{label}</span>'
-# Đổi sang st.info và st.error gốc để Streamlit dịch được font LaTeX
 def note_html(text): st.info(text)
 def error_html(text): st.error(text)
 def show_step(badge_html, latex_str):
@@ -285,7 +307,7 @@ with st.spinner("Đang giải bài toán…"):
         if not is_feasible and not is_optimal_obj:
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### 🔄 Phương Pháp Hai Pha")
-            note_html("Vi phạm cả tính khả thi lẫn tối ưu → Kích hoạt Hai Pha.")
+            note_html("Vi phạm cả tính khả thi lẫn tối ưu $\\rightarrow$ Kích hoạt Hai Pha.")
 
             v_d, C_d, D_p1, non_p1 = l.khoi_tao_pha_1(D, non_basic)
             j_in_init, i_out_init   = buoc_xoay_khoi_tao_pha_1(B, non_p1)
@@ -307,7 +329,7 @@ with st.spinner("Đang giải bài toán…"):
                 
                 giai_thich = f"**Lập luận bước {it_p1}:**\n- **Biến vào:** Chọn ${non_p1[jin_p1]}$ do có hệ số âm ở hàm mục tiêu.\n"
                 if ratios_str:
-                    giai_thich += f"- **Biến ra:** Xét tỷ số " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[iout_p1]}$ (tỷ số nhỏ nhất)."
+                    giai_thich += f"- **Biến ra:** Xét tỷ số $(b / |d|)$: " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[iout_p1]}$ (tỷ số nhỏ nhất)."
                 st.success(giai_thich)
                 # ---------------------------------
                 
@@ -316,7 +338,7 @@ with st.spinner("Đang giải bài toán…"):
                 it_p1 += 1
 
             if abs(float(v_d)) > 1e-9:
-                error_html(f"Pha 1 kết thúc với $\\delta^* = {l.format_frac(v_d)} \\neq 0$ → Bài toán VÔ NGHIỆM.")
+                error_html(f"Pha 1 kết thúc với $\\delta^* = {l.format_frac(v_d)} \\neq 0$ $\\rightarrow$ Bài toán VÔ NGHIỆM.")
                 st.stop()
 
             v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std, exp_names)
@@ -328,7 +350,7 @@ with st.spinner("Đang giải bài toán…"):
         elif mode_dual:
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### 🔁 Đơn Hình Đối Ngẫu")
-            note_html("Tất cả $c_j \\geq 0$, tồn tại $b_i < 0$ → Áp dụng Đơn Hình Đối Ngẫu.")
+            note_html("Tất cả $c_j \\geq 0$, tồn tại $b_i < 0$ $\\rightarrow$ Áp dụng Đơn Hình Đối Ngẫu.")
         else:
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### ▶️ Đơn Hình Gốc")
@@ -339,7 +361,7 @@ with st.spinner("Đang giải bài toán…"):
                 status, j_in, i_out = l.tim_phan_tu_truc_doi_ngau(C, D, B)
                 if status == "FEASIBLE":
                     mode_dual = False
-                    note_html("Từ vựng đã khả thi → chuyển sang Đơn Hình Gốc.")
+                    note_html("Từ vựng đã khả thi $\\rightarrow$ Chuyển sang Đơn Hình Gốc.")
                     continue
             else:
                 status, j_in, i_out = l.tim_phan_tu_truc_don_hinh_goc(C, D, B)
@@ -392,17 +414,17 @@ with st.spinner("Đang giải bài toán…"):
                         if d_val > 0:
                             ratio_val = C[j] / d_val
                             ratios_str.append(f"${non_basic[j]}: \\frac{{{l.format_frac(C[j])}}}{{{l.format_frac(d_val)}}} = {l.format_frac(ratio_val)}$")
-                    giai_thich += f"- **Biến ra:** Chọn ${basic[i_out]}$ do có vế phải âm.\n"
+                    giai_thich += f"- **Biến ra:** Chọn mũi tên trái tại ${basic[i_out]}$ do có vế phải âm nhất.\n"
                     if ratios_str:
-                        giai_thich += f"- **Biến vào:** Xét tỷ số (c / d) " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${non_basic[j_in]}$ (tỷ số nhỏ nhất)."
+                        giai_thich += f"- **Biến vào:** Xét tỷ số $(c / d)$: " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${non_basic[j_in]}$ (tỷ số nhỏ nhất)."
                 else:
                     for i, d_row in enumerate(D):
                         if d_row[j_in] < 0:
                             ratio_val = B[i] / abs(d_row[j_in])
                             ratios_str.append(f"${basic[i]}: \\frac{{{l.format_frac(B[i])}}}{{{l.format_frac(abs(d_row[j_in]))}}} = {l.format_frac(ratio_val)}$")
-                    giai_thich += f"- **Biến vào:** Chọn ${non_basic[j_in]}$ do có hệ số âm ở hàm mục tiêu.\n"
+                    giai_thich += f"- **Biến vào:** Chọn mũi tên xuống tại ${non_basic[j_in]}$ do có hệ số âm ở hàm mục tiêu.\n"
                     if ratios_str:
-                        giai_thich += f"- **Biến ra:** Xét tỷ số (b / |d|) " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[i_out]}$ (tỷ số nhỏ nhất)."
+                        giai_thich += f"- **Biến ra:** Xét tỷ số $(b / |d|)$: " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[i_out]}$ (tỷ số nhỏ nhất)."
                 
                 st.success(giai_thich)
                 # --------------------------
@@ -412,7 +434,7 @@ with st.spinner("Đang giải bài toán…"):
                 it += 1
             else:
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-                if status == "UNBOUNDED": error_html("Bài toán KHÔNG GIỚI NỘI — hàm mục tiêu tiến đến ±∞.")
+                if status == "UNBOUNDED": error_html("Bài toán KHÔNG GIỚI NỘI — hàm mục tiêu tiến đến $\\pm\\infty$.")
                 elif status == "INFEASIBLE": error_html("Bài toán VÔ NGHIỆM — miền chấp nhận được rỗng.")
                 else: error_html(f"Trạng thái không xác định: <code>{status}</code>.")
                 break
