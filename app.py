@@ -346,7 +346,7 @@ with st.spinner("Đang giải bài toán…"):
                     break
 
             if abs(float(v_d)) > 1e-9:
-                error_html(f"**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**<br><br>**Giải thích toán học:** Pha 1 kết thúc nhưng $\\delta^* = {l.format_frac(v_d)} \\neq 0$. Điều này chứng tỏ không thể ép biến giả tạo $x_0$ về $0$, tức là hệ bất phương trình ràng buộc ban đầu có mâu thuẫn lẫn nhau (miền nghiệm rỗng).")
+                error_html(f"**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**\n\n**Giải thích toán học:** Pha 1 kết thúc nhưng $\\delta^* = {l.format_frac(v_d)} \\neq 0$. Điều này chứng tỏ không thể ép biến giả tạo $x_0$ về $0$, tức là hệ bất phương trình ràng buộc ban đầu có mâu thuẫn lẫn nhau (miền nghiệm rỗng).")
                 st.stop()
 
             v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std, exp_names)
@@ -449,11 +449,11 @@ with st.spinner("Đang giải bài toán…"):
             else:
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
                 if status == "UNBOUNDED": 
-                    error_html("**Kết luận: Bài toán KHÔNG GIỚI NỘI (Unbounded)**<br>Hàm mục tiêu $z \\to -\\infty$.<br><br>**Giải thích toán học:** Đã chọn được biến vào, nhưng xét trong các phương trình ràng buộc, toàn bộ hệ số của biến đó đều mang dấu cộng ($+$). Ta có thể tăng biến này lên vô tận mà không làm bất kỳ biến cơ sở nào bị âm (không vi phạm ràng buộc).")
+                    error_html("**Kết luận: Bài toán KHÔNG GIỚI NỘI (Unbounded)**\n\nHàm mục tiêu $z \\to -\\infty$.\n\n**Giải thích toán học:** Đã chọn được biến vào, nhưng xét trong các phương trình ràng buộc, toàn bộ hệ số của biến đó đều mang dấu cộng ($+$). Ta có thể tăng biến này lên vô tận mà không làm bất kỳ biến cơ sở nào bị âm (không vi phạm ràng buộc).")
                 elif status == "INFEASIBLE": 
-                    error_html("**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**<br>Miền chấp nhận được rỗng.<br><br>**Giải thích toán học:** Xét tại dòng của biến ra (có vế phải âm), toàn bộ hệ số của các biến phi cơ sở đều mang dấu trừ ($-$) hoặc bằng $0$. Không có biến nào có khả năng làm biến vào để xoay và bù đắp vi phạm này.")
+                    error_html("**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**\n\nMiền chấp nhận được rỗng.\n\n**Giải thích toán học:** Xét tại dòng của biến ra (có vế phải âm), toàn bộ hệ số của các biến phi cơ sở đều mang dấu trừ ($-$) hoặc bằng $0$. Không có biến nào có khả năng làm biến vào để xoay và bù đắp vi phạm này.")
                 else: 
-                    error_html(f"Trạng thái không xác định: <code>{status}</code>.")
+                    error_html(f"Trạng thái không xác định: `{status}`.")
                 break
                 
         else:
