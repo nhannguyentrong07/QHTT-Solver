@@ -1,38 +1,44 @@
 import streamlit as st
-import numpy as np
-from logic import chuan_hoa_buoc_1_va_2, tao_chuoi_latex
+from logic import chuan_hoa_va_tao_tu_vung, tao_latex_tu_vung_xuat_phat
 
-st.title("Thuật toán Chuẩn hóa QHTT")
+st.set_page_config(layout="wide", page_title="QHTT Chvátal Solver")
+st.title("Chương trình Giải QHTT - Phương pháp Từ Vựng")
 
-# Dữ liệu đầu vào
-c_input = [3, -2]
-A_input = [[1, 1], [2, -1]]
-b_input = [4, -5] 
-is_min = True     
-dau_input = ['<=', '<=']
-
-# Tự động tạo tên biến x_1, x_2 cho LaTeX
-ten_bien_x = [f"x_{{{i+1}}}" for i in range(len(c_input))]
+# --- Giả lập Input Đề Bài ---
+# Ví dụ: Max Z, có ràng buộc >= và = để test hệ thống phân giải
+c_input = [3, 2]            # Hàm mục tiêu Max z = 3x1 + 2x2
+A_input = [[1, 2], [1, -1], [2, 1]]
+b_input = [4, 1, 6]
+is_min = False              # Đang là Max
+dau_input = ['<=', '>=', '=']
 
 st.write("### 1. Đề bài gốc:")
-st.latex(f"\\text{{{'Min' if is_min else 'Max'}}} \\quad Z = {tao_chuoi_latex(c_input, ten_bien_x)}")
-for i in range(len(b_input)):
-    # Đổi dấu <=, >= thành ký hiệu LaTeX chuẩn \le, \ge
-    dau_latex = '\\le' if dau_input[i] == '<=' else '\\ge' if dau_input[i] == '>=' else '='
-    st.latex(f"{tao_chuoi_latex(A_input[i], ten_bien_x)} {dau_latex} {b_input[i]}")
+st.latex(r"\text{Max} \quad Z = 3x_1 + 2x_2")
+st.latex(r"1x_1 + 2x_2 \le 4")
+st.latex(r"1x_1 - 1x_2 \ge 1")
+st.latex(r"2x_1 + 1x_2 = 6")
+st.latex(r"x_1, x_2 \ge 0")
 
-# Chạy thuật toán lõi
-c_moi, A_moi, b_moi, dau_moi, giai_thich = chuan_hoa_buoc_1_va_2(
+# --- Xử lý Thuật toán ---
+c_std, A_std, b_std, giai_thich, is_max = chuan_hoa_va_tao_tu_vung(
     c_input, A_input, b_input, is_min, dau_input
 )
 
 st.write("---")
-st.write("### 2. Các bước xử lý tự động:")
+st.write("### 2. Tiền xử lý Dạng chuẩn:")
 for cau in giai_thich:
     st.info(cau)
 
-st.write("### 3. Bài toán sau khi chuẩn hóa Bước 1 & 2:")
-st.latex(f"\\text{{Max}} \\quad Z' = {tao_chuoi_latex(c_moi, ten_bien_x)}")
-for i in range(len(b_moi)):
-    dau_latex = '\\le' if dau_moi[i] == '<=' else '\\ge' if dau_moi[i] == '>=' else '='
-    st.latex(f"{tao_chuoi_latex(A_moi[i], ten_bien_x)} {dau_latex} {int(b_moi[i]) if b_moi[i].is_integer() else b_moi[i]}")
+st.write("---")
+st.write("### 3. Từ vựng xuất phát (Initial Dictionary):")
+st.write("Hệ thống tự động thêm các biến bù $w_i \ge 0$ để tạo hệ phương trình:")
+
+# Gọi hàm tạo LaTeX
+latex_tu_vung = tao_latex_tu_vung_xuat_phat(c_std, A_std, b_std, is_max)
+st.latex(latex_tu_vung)
+
+# Cảnh báo định tuyến (Smart Routing Trigger)
+if any(val < 0 for val in b_std):
+    st.warning("Hệ thống nhận diện: $b_i < 0$. Từ vựng xuất phát KHÔNG khả thi. Sẽ cần kích hoạt Phương pháp Hai Pha (Two-Phase) hoặc Đơn hình Đối ngẫu (Dual Simplex) ở bước tiếp theo.")
+else:
+    st.success("Hệ thống nhận diện: Từ vựng khả thi. Đủ điều kiện kích hoạt Đơn hình Gốc (Primal Simplex).")
