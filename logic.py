@@ -161,13 +161,13 @@ def tim_phan_tu_truc_doi_ngau(C, D, B):
     return "PIVOT", j_in, i_out
 
 def khoi_tao_pha_1(D, non_basic_vars):
-    """Thiết lập Từ vựng Pha 1: Thêm x_0 và tạo hàm delta"""
+    """Thiết lập Từ vựng Pha 1: Thêm x_0 và tạo hàm delta = x_0"""
     non_basic_new = list(non_basic_vars) + ["x_0"]
     # Thêm hệ số +1 cho x_0 ở tất cả các phương trình (Dấu +x_0)
     D_new = [row + [Fraction(1)] for row in D]
     
-    # Hàm mục tiêu tạm thời delta = 0 - x_0
-    C_delta = [Fraction(0)] * len(non_basic_vars) + [Fraction(-1)]
+    # Sửa lại chuẩn xác: Hàm mục tiêu tạm thời delta = 0 + x_0 (Hệ số là +1)
+    C_delta = [Fraction(0)] * len(non_basic_vars) + [Fraction(1)]
     v_delta = Fraction(0)
     
     return v_delta, C_delta, D_new, non_basic_new

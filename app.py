@@ -42,7 +42,8 @@ else:
     st.error("Trạng thái: Không khả thi ($b_i < 0$) và chưa tối ưu ($c_j < 0$). \n\n👉 **Quyết định: Kích hoạt HAI PHA (Two-Phase Simplex).**")
     
     st.write("#### Khởi tạo Pha 1:")
-    st.info("Hệ thống nhận diện được lệnh: Tự động thêm biến giả tạo $x_0$ mang dấu cộng vào tất cả phương trình và thiết lập hàm mục tiêu phụ $\\delta = -x_0$.")
+    # Sửa lại thành delta = x_0
+    st.info("Hệ thống nhận diện được lệnh: Tự động thêm biến giả tạo $x_0$ mang dấu cộng vào tất cả phương trình và thiết lập hàm mục tiêu phụ $\\delta = x_0$.")
     
     # Kích hoạt hàm tạo x_0 và hàm delta từ logic.py
     v_delta, C_delta, D_pha1, non_basic_pha1 = khoi_tao_pha_1(D, non_basic)
