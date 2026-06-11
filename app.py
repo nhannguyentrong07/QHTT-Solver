@@ -237,8 +237,9 @@ if not solve_clicked:
     st.stop()
 
 def badge(label, kind="pivot"): return f'<span class="step-badge {kind}">{label}</span>'
-def note_html(text): st.markdown(f'<div class="info-note">ℹ️ {text}</div>', unsafe_allow_html=True)
-def error_html(text): st.markdown(f'<div class="error-box">⚠️ {text}</div>', unsafe_allow_html=True)
+# Đổi sang st.info và st.error gốc để Streamlit dịch được font LaTeX
+def note_html(text): st.info(text)
+def error_html(text): st.error(text)
 def show_step(badge_html, latex_str):
     st.markdown(f'<div class="step-card">{badge_html}', unsafe_allow_html=True)
     st.latex(latex_str)
@@ -296,6 +297,20 @@ with st.spinner("Đang giải bài toán…"):
             while it_p1 <= 30:
                 st_p1, jin_p1, iout_p1 = l.tim_phan_tu_truc_don_hinh_goc(C_d, D_p1, B)
                 if st_p1 != "PIVOT": break
+                
+                # --- LẬP LUẬN CHỌN BIẾN PHA 1 ---
+                ratios_str = []
+                for i, d_row in enumerate(D_p1):
+                    if d_row[jin_p1] < 0:
+                        ratio_val = B[i] / abs(d_row[jin_p1])
+                        ratios_str.append(f"${basic[i]}: \\frac{{{l.format_frac(B[i])}}}{{{l.format_frac(abs(d_row[jin_p1]))}}} = {l.format_frac(ratio_val)}$")
+                
+                giai_thich = f"**Lập luận bước {it_p1}:**\n- **Biến vào:** Chọn ${non_p1[jin_p1]}$ do có hệ số âm ở hàm mục tiêu.\n"
+                if ratios_str:
+                    giai_thich += f"- **Biến ra:** Xét tỷ số " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[iout_p1]}$ (tỷ số nhỏ nhất)."
+                st.success(giai_thich)
+                # ---------------------------------
+                
                 show_step(badge(f"Pha 1 · Bước {it_p1}", "phase1"), l.tao_latex_tu_vung(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1, is_p1=True))
                 v_d, C_d, D_p1, B, basic, non_p1 = l.thuc_hien_phep_xoay(v_d, C_d, D_p1, B, basic, non_p1, jin_p1, iout_p1)
                 it_p1 += 1
@@ -368,6 +383,30 @@ with st.spinner("Đang giải bài toán…"):
             elif status == "PIVOT":
                 kind = "dual" if mode_dual else "pivot"
                 label = f"Bước {it} · {'Đối ngẫu' if mode_dual else 'Đơn hình gốc'}"
+                
+                # --- LẬP LUẬN CHỌN BIẾN ---
+                giai_thich = f"**Lập luận bước {it}:**\n"
+                ratios_str = []
+                if mode_dual:
+                    for j, d_val in enumerate(D[i_out]):
+                        if d_val > 0:
+                            ratio_val = C[j] / d_val
+                            ratios_str.append(f"${non_basic[j]}: \\frac{{{l.format_frac(C[j])}}}{{{l.format_frac(d_val)}}} = {l.format_frac(ratio_val)}$")
+                    giai_thich += f"- **Biến ra:** Chọn ${basic[i_out]}$ do có vế phải âm.\n"
+                    if ratios_str:
+                        giai_thich += f"- **Biến vào:** Xét tỷ số (c / d) " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${non_basic[j_in]}$ (tỷ số nhỏ nhất)."
+                else:
+                    for i, d_row in enumerate(D):
+                        if d_row[j_in] < 0:
+                            ratio_val = B[i] / abs(d_row[j_in])
+                            ratios_str.append(f"${basic[i]}: \\frac{{{l.format_frac(B[i])}}}{{{l.format_frac(abs(d_row[j_in]))}}} = {l.format_frac(ratio_val)}$")
+                    giai_thich += f"- **Biến vào:** Chọn ${non_basic[j_in]}$ do có hệ số âm ở hàm mục tiêu.\n"
+                    if ratios_str:
+                        giai_thich += f"- **Biến ra:** Xét tỷ số (b / |d|) " + " | ".join(ratios_str) + f" $\\rightarrow$ Chọn ${basic[i_out]}$ (tỷ số nhỏ nhất)."
+                
+                st.success(giai_thich)
+                # --------------------------
+
                 show_step(badge(label, kind), l.tao_latex_tu_vung(v, C, D, B, basic, non_basic, j_in, i_out, is_dual=mode_dual))
                 v, C, D, B, basic, non_basic = l.thuc_hien_phep_xoay(v, C, D, B, basic, non_basic, j_in, i_out)
                 it += 1
