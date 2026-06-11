@@ -184,3 +184,34 @@ def buoc_xoay_khoi_tao_pha_1(B, non_basic_vars):
             i_out = i
             
     return j_in, i_out
+
+def chuyen_tu_pha1_sang_pha2(D_pha1, B, basic_vars, non_basic_pha1, c_original):
+    """Bỏ x_0 khỏi Từ vựng, thiết lập lại hàm mục tiêu z gốc cho Pha 2"""
+    # 1. Loại bỏ cột x_0 ra khỏi ma trận và danh sách biến
+    try:
+        idx_x0 = non_basic_pha1.index("x_0")
+        non_basic_new = non_basic_pha1[:idx_x0] + non_basic_pha1[idx_x0+1:]
+        D_new = [row[:idx_x0] + row[idx_x0+1:] for row in D_pha1]
+    except ValueError:
+        non_basic_new = list(non_basic_pha1)
+        D_new = [list(row) for row in D_pha1]
+
+    # 2. Khởi tạo lại hàm Z gốc: z = 0
+    v_new = Fraction(0)
+    C_new = [Fraction(0)] * len(non_basic_new)
+
+    # 3. Thế các biến vào hàm Z (z = sum(c_j * x_j))
+    for j, c_val in enumerate(c_original):
+        ten_x = f"x_{{{j+1}}}"
+        if ten_x in non_basic_new:
+            # Nếu x_j đang ở vế phải (phi cơ sở), cộng thẳng hệ số vào C
+            idx = non_basic_new.index(ten_x)
+            C_new[idx] += Fraction(c_val)
+        elif ten_x in basic_vars:
+            # Nếu x_j đang ở vế trái (cơ sở), thế phương trình của nó vào z
+            idx_i = basic_vars.index(ten_x)
+            v_new += Fraction(c_val) * B[idx_i] # Cộng hằng số tự do
+            for k, _ in enumerate(non_basic_new):
+                C_new[k] += Fraction(c_val) * D_new[idx_i][k] # Nhân phân phối hệ số
+
+    return v_new, C_new, D_new, non_basic_new
