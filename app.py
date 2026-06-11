@@ -53,15 +53,12 @@ st.markdown("""
 # ══════════════════════════════════════════════════
 #  HÀM TIỆN ÍCH
 # ══════════════════════════════════════════════════
-def fmt(val):
-    return f"{val:g}"
-
 def build_linear_expr(coeffs, var_names, show_zero=False):
     terms = []
     for c, var in zip(coeffs, var_names):
         if c == 0 and not show_zero: continue
         abs_c = abs(c)
-        coef_str = "" if abs_c == 1 else fmt(abs_c)
+        coef_str = "" if abs_c == 1 else l.format_frac(abs_c)
         if not terms: 
             sign = "-" if c < 0 else ""
             terms.append(f"{sign}{coef_str}{var}")
@@ -90,20 +87,20 @@ def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
     for j in range(n):
         cond = var_cond[j]
         if cond == "≥ 0":
-            c_exp.append(c_in[j])
-            for i in range(len(A_in)): A_exp[i].append(A_in[i][j])
+            c_exp.append(Fraction(str(c_in[j])))
+            for i in range(len(A_in)): A_exp[i].append(Fraction(str(A_in[i][j])))
             names.append(f"x_{{{j+1}}}")
         elif cond == "≤ 0":
-            c_exp.append(-c_in[j])
-            for i in range(len(A_in)): A_exp[i].append(-A_in[i][j])
+            c_exp.append(Fraction(str(-c_in[j])))
+            for i in range(len(A_in)): A_exp[i].append(Fraction(str(-A_in[i][j])))
             names.append(f"x_{{{j+1}}}'")
             notes.append(f"x_{j+1} ≤ 0 → đặt x_{j+1} = −x_{j+1}′ (x_{j+1}′ ≥ 0).")
         else:
-            c_exp.append( c_in[j])
-            c_exp.append(-c_in[j])
+            c_exp.append(Fraction(str(c_in[j])))
+            c_exp.append(Fraction(str(-c_in[j])))
             for i in range(len(A_in)):
-                A_exp[i].append( A_in[i][j])
-                A_exp[i].append(-A_in[i][j])
+                A_exp[i].append(Fraction(str(A_in[i][j])))
+                A_exp[i].append(Fraction(str(-A_in[i][j])))
             names.append(f"x_{{{j+1}}}^+")
             names.append(f"x_{{{j+1}}}^-")
             notes.append(f"x_{j+1} tự do → đặt x_{j+1} = x_{j+1}⁺ − x_{j+1}⁻.")
@@ -116,15 +113,16 @@ def chuan_hoa_dau_vao(c_in, A_in, b_in, is_min, dau_in, var_cond):
 
     A_std, b_std = [], []
     for i, (row, dau, bi) in enumerate(zip(A_exp, dau_in, b_in)):
+        bi_frac = Fraction(str(bi))
         if dau == "<=":
-            A_std.append(list(row)); b_std.append(bi)
+            A_std.append(list(row)); b_std.append(bi_frac)
         elif dau == ">=":
-            A_std.append([-v for v in row]); b_std.append(-bi)
+            A_std.append([-v for v in row]); b_std.append(-bi_frac)
             notes.append(f"Ràng buộc {i+1}: '≥' → nhân −1 để thành '≤'.")
         else:
-            A_std.append(list(row)); b_std.append(bi)
-            A_std.append([-v for v in row]); b_std.append(-bi)
-            notes.append(f"Ràng buộc {i+1}: '=' — tách thành ≤ và ≥ (nhân -1).")
+            A_std.append(list(row)); b_std.append(bi_frac)
+            A_std.append([-v for v in row]); b_std.append(-bi_frac)
+            notes.append(f"Ràng buộc {i+1}: '=' — tách thành hai bất phương trình ≤ và ≥ (nhân -1).")
     return c_std, A_std, b_std, notes, names
 
 def hien_thi_de_bai(obj_type, c_in, A_in, b_in, dau_in, var_cond, num_vars):
@@ -135,7 +133,7 @@ def hien_thi_de_bai(obj_type, c_in, A_in, b_in, dau_in, var_cond, num_vars):
     dau_map = {"<=": r"\leq", ">=": r"\geq", "=": "="}
     for i, (row, dau, bi) in enumerate(zip(A_in, dau_in, b_in)):
         lhs = build_linear_expr(row, var_names_tex)
-        con_lines.append(rf"{lhs} & {dau_map[dau]} & {fmt(bi)}")
+        con_lines.append(rf"{lhs} & {dau_map[dau]} & {l.format_frac(bi)}")
     groups = {"≥ 0": [], "≤ 0": [], "Tự do": []}
     for j, cond in enumerate(var_cond):
         groups[cond].append(f"x_{{{j+1}}}")
@@ -145,22 +143,29 @@ def hien_thi_de_bai(obj_type, c_in, A_in, b_in, dau_in, var_cond, num_vars):
     if groups["Tự do"]: cond_lines.append(", ".join(groups["Tự do"]) + r"\; \text{tự do}")
     rows_tex = " \\\\ ".join(con_lines)
     cond_tex = " \\\\ ".join(cond_lines) if cond_lines else ""
-    latex = (r"\begin{aligned}" rf"& {obj_line} \\" r"& \text{s.t.} \begin{cases}" + rows_tex + r"\end{cases} \\")
-    if cond_tex: latex += rf"& {cond_tex}"
+    latex = (r"\begin{aligned} " rf"& {obj_line} \\ " r"& \text{s.t.} \begin{cases} " rf"{rows_tex} " r"\end{cases} \\ ")
+    if cond_tex: latex += rf"& {cond_tex} "
     latex += r"\end{aligned}"
     return latex
 
 def hien_thi_dang_chuan(c_std, A_std, b_std, exp_names):
-    """Hàm hiển thị toán học dạng chuẩn trước khi lập từ vựng"""
     obj_expr = build_linear_expr(c_std, exp_names)
     obj_line = rf"\min\; z = {obj_expr}"
     con_lines = []
     for row, bi in zip(A_std, b_std):
         lhs = build_linear_expr(row, exp_names)
-        con_lines.append(rf"{lhs} & \leq & {fmt(bi)}")
+        con_lines.append(rf"{lhs} & \leq & {l.format_frac(bi)}")
     rows_tex = " \\\\ ".join(con_lines)
     cond_tex = ", ".join(exp_names) + r" \geq 0"
-    latex = (r"\begin{aligned}" rf"& {obj_line} \\" r"& \text{s.t.} \begin{cases}" + rows_tex + r"\end{cases} \\" rf"& {cond_tex} \\ \end{aligned}")
+    latex = (
+        r"\begin{aligned} "
+        rf"& {obj_line} \\ "
+        r"& \text{s.t.} \begin{cases} "
+        rf"{rows_tex} "
+        r"\end{cases} \\ "
+        rf"& {cond_tex} "
+        r"\end{aligned}"
+    )
     return latex
 
 # ══════════════════════════════════════════════════
@@ -206,15 +211,14 @@ with st.sidebar:
     A_in, b_in, dau_in = [], [], []
     for i in range(num_cons):
         st.markdown(f'<div class="con-label">Ràng buộc {i+1}</div>', unsafe_allow_html=True)
-        # Nới rộng tỷ lệ cột để phần Dấu không bị che lấp
-        row_cols = st.columns([1]*num_vars + [1.2, 1]) 
+        # Nới rộng tỷ lệ cột để Dấu và Vế phải hiện rõ chữ
+        row_cols = st.columns([1]*num_vars + [1.5, 1.2]) 
         row = []
         for j in range(num_vars):
             v2 = row_cols[j].number_input(f"x{j+1}", value=0.0, step=1.0, key=f"A{i}{j}", label_visibility="visible")
             row.append(v2)
-        # Đã sửa lỗi ẩn nhãn thành visible để người dùng thấy rõ
         dau = row_cols[num_vars].selectbox("Dấu", ["<=", ">=", "="], key=f"d{i}", label_visibility="visible")
-        val_b = row_cols[num_vars+1].number_input("b", value=0.0, step=1.0, key=f"b{i}", label_visibility="visible")
+        val_b = row_cols[num_vars+1].number_input("Vế phải", value=0.0, step=1.0, key=f"b{i}", label_visibility="visible")
         A_in.append(row); b_in.append(val_b); dau_in.append(dau)
 
     st.markdown("---")
@@ -251,10 +255,8 @@ st.markdown('<div class="problem-box"><h3>Bài toán Gốc</h3>', unsafe_allow_h
 st.latex(de_bai_latex)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Lấy dữ liệu chuẩn hóa
 c_std, A_std, b_std, notes, exp_names = chuan_hoa_dau_vao(c_in, A_in, b_in, obj_type == "Min", dau_in, var_cond)
 
-# Hiển thị bài toán dạng chuẩn mới
 st.markdown('<div class="problem-box"><h3>Bài toán Dạng Chuẩn</h3>', unsafe_allow_html=True)
 st.latex(hien_thi_dang_chuan(c_std, A_std, b_std, exp_names))
 for n in notes: note_html(n)
@@ -299,10 +301,10 @@ with st.spinner("Đang giải bài toán…"):
                 it_p1 += 1
 
             if abs(float(v_d)) > 1e-9:
-                error_html(f"Pha 1 kết thúc với z₀ = {l.format_frac(v_d)} ≠ 0 → Bài toán VÔ NGHIỆM.")
+                error_html(f"Pha 1 kết thúc với $\\delta^* = {l.format_frac(v_d)} \\neq 0$ → Bài toán VÔ NGHIỆM.")
                 st.stop()
 
-            v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std)
+            v, C, D, non_basic = l.chuyen_sang_pha2(D_p1, B, basic, non_p1, c_std, exp_names)
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### ⚙️ Pha 2 – Đơn Hình Gốc")
             show_step(badge("Từ vựng đầu Pha 2", "init"), l.tao_latex_tu_vung(v, C, D, B, basic, non_basic))
@@ -311,7 +313,7 @@ with st.spinner("Đang giải bài toán…"):
         elif mode_dual:
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### 🔁 Đơn Hình Đối Ngẫu")
-            note_html("Tất cả c ≥ 0, tồn tại b < 0 → Áp dụng Đơn Hình Đối Ngẫu.")
+            note_html("Tất cả $c_j \\geq 0$, tồn tại $b_i < 0$ → Áp dụng Đơn Hình Đối Ngẫu.")
         else:
             st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
             st.markdown("### ▶️ Đơn Hình Gốc")
@@ -350,10 +352,9 @@ with st.spinner("Đang giải bài toán…"):
                 z_min = v
                 z_display_val = (-z_min) if obj_type == "Max" else z_min
 
-                def frac_to_str(f): return str(f.numerator) if f.denominator == 1 else f"{f.numerator}/{f.denominator}"
-                z_str = frac_to_str(z_display_val)
-                vars_html = ",&nbsp; ".join([f"x<sub>{j+1}</sub> = {frac_to_str(nghiem_goc[j])}" for j in range(num_vars)])
-                if obj_type == "Max": note_html("Bài toán gốc là Max: z* = −(z_min*)")
+                z_str = l.format_frac(z_display_val)
+                vars_html = ",&nbsp; ".join([f"x<sub>{j+1}</sub> = {l.format_frac(nghiem_goc[j])}" for j in range(num_vars)])
+                if obj_type == "Max": note_html("Bài toán gốc là Max: $z^* = -(\\min z)$")
 
                 st.markdown(f"""
                 <div class="result-box">

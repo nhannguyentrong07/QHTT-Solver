@@ -1,51 +1,24 @@
 from fractions import Fraction
 
 def format_frac(f):
+    """Định dạng phân số, nếu mẫu số là 1 thì in ra số nguyên"""
+    if isinstance(f, (int, float)):
+        f = Fraction(str(f))
     return str(f.numerator) if f.denominator == 1 else f"{f.numerator}/{f.denominator}"
 
-def chuan_hoa_dau_vao(c, A, b, is_minimize, dau_rang_buoc):
-    c_std = [Fraction(x) for x in c]
-    if not is_minimize:
-        c_std = [-x for x in c_std]
-    
-    A_std = []
-    b_std = []
-    giai_thich = []
-    
-    for i in range(len(b)):
-        row_A = [Fraction(x) for x in A[i]]
-        val_b = Fraction(b[i])
-        dau = dau_rang_buoc[i]
-        
-        if dau == '<=':
-            A_std.append(row_A)
-            b_std.append(val_b)
-        elif dau == '>=':
-            A_std.append([-x for x in row_A])
-            b_std.append(-val_b)
-            giai_thich.append(f"Ràng buộc {i+1} (>=): Đã nhân -1 đổi chiều thành <=.")
-        elif dau == '=':
-            A_std.append(row_A)
-            b_std.append(val_b)
-            A_std.append([-x for x in row_A])
-            b_std.append(-val_b)
-            giai_thich.append(f"Ràng buộc {i+1} (=): Đã tách thành hai bất phương trình <= và >= (nhân -1 cho >=).")
-            
-    return c_std, A_std, b_std, giai_thich
-
 def khoi_tao_tu_vung_phan_so(c, A, b):
-    C = [Fraction(x) for x in c]
-    B = [Fraction(x) for x in b]
-    D = [[-Fraction(val) for val in row] for row in A]
+    C = [Fraction(str(x)) for x in c]
+    B = [Fraction(str(x)) for x in b]
+    D = [[-Fraction(str(val)) for val in row] for row in A]
     return Fraction(0), C, D, B
 
 def tim_phan_tu_truc_don_hinh_goc(C, D, B):
-    min_c = Fraction(0)
     j_in = -1
     for j, c_val in enumerate(C):
-        if c_val < min_c:
-            min_c = c_val
+        if c_val < 0:
             j_in = j
+            break # Tuân thủ tuyệt đối Quy tắc Bland: Chọn biến âm đầu tiên
+            
     if j_in == -1: return "OPTIMAL", -1, -1
     
     min_ratio = None
@@ -60,12 +33,12 @@ def tim_phan_tu_truc_don_hinh_goc(C, D, B):
     return "PIVOT", j_in, i_out
 
 def tim_phan_tu_truc_doi_ngau(C, D, B):
-    min_b = Fraction(0)
     i_out = -1
     for i, b_val in enumerate(B):
-        if b_val < min_b:
-            min_b = b_val
+        if b_val < 0:
             i_out = i
+            break # Quy tắc Bland cho Đối ngẫu: Chọn biến ra đầu tiên bị âm
+            
     if i_out == -1: return "FEASIBLE", -1, -1
     
     min_ratio = None
@@ -131,14 +104,15 @@ def thuc_hien_phep_xoay(v, C, D, B, basic, non_basic, j_in, i_out):
 def khoi_tao_pha_1(D, non_basic):
     return Fraction(0), [Fraction(0)]*len(non_basic) + [Fraction(1)], [r + [Fraction(1)] for r in D], non_basic + ["x_0"]
 
-def chuyen_sang_pha2(D_p1, B, basic, non_basic_p1, c_orig):
-    idx_x0 = non_basic_p1.index("x_0")
-    non_p2 = non_basic_p1[:idx_x0] + non_basic_p1[idx_x0+1:]
+def chuyen_sang_pha2(D_p1, B, basic, non_p1, c_orig, exp_names):
+    idx_x0 = non_p1.index("x_0")
+    non_p2 = non_p1[:idx_x0] + non_p1[idx_x0+1:]
     D_p2 = [r[:idx_x0] + r[idx_x0+1:] for r in D_p1]
     v_n = Fraction(0); C_n = [Fraction(0)]*len(non_p2)
     for j, val in enumerate(c_orig):
-        name = f"x_{{{j+1}}}"
-        if name in non_p2: C_n[non_p2.index(name)] += val
+        name = exp_names[j]
+        if name in non_p2:
+            C_n[non_p2.index(name)] += val
         elif name in basic:
             idx = basic.index(name)
             v_n += val * B[idx]
