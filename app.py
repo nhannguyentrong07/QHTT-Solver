@@ -448,10 +448,19 @@ with st.spinner("Đang giải bài toán…"):
                 
             else:
                 st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
+                
+                # --- BỔ SUNG: IN RA TỪ VỰNG "THỦ PHẠM" TRƯỚC KHI KẾT LUẬN ---
+                kind = "dual" if mode_dual else "pivot"
+                label = f"Bước {it} · Phát hiện {'Vô nghiệm' if status == 'INFEASIBLE' else 'Không giới nội'}"
+                
+                # Hàm LaTeX sẽ tự động chỉ vẽ 1 mũi tên (vào hoặc ra) và không đóng khung ô nào
+                show_step(badge(label, kind), l.tao_latex_tu_vung(v, C, D, B, basic, non_basic, j_in, i_out, is_dual=mode_dual))
+                # -----------------------------------------------------------
+
                 if status == "UNBOUNDED": 
-                    error_html("**Kết luận: Bài toán KHÔNG GIỚI NỘI (Unbounded)**\n\nHàm mục tiêu $z \\to -\\infty$.\n\n**Giải thích toán học:** Đã chọn được biến vào, nhưng xét trong các phương trình ràng buộc, toàn bộ hệ số của biến đó đều mang dấu cộng ($+$). Ta có thể tăng biến này lên vô tận mà không làm bất kỳ biến cơ sở nào bị âm (không vi phạm ràng buộc).")
+                    error_html("**Kết luận: Bài toán KHÔNG GIỚI NỘI (Unbounded)**\n\nHàm mục tiêu $z \\to -\\infty$.\n\n**Giải thích toán học:** Đã chọn được biến vào (mũi tên cắm xuống), nhưng xét trong các phương trình ràng buộc, toàn bộ hệ số của biến đó đều mang dấu cộng ($+$) hoặc bằng $0$. Ta có thể tăng biến này lên vô tận mà không làm bất kỳ biến cơ sở nào bị âm (không vi phạm ràng buộc).")
                 elif status == "INFEASIBLE": 
-                    error_html("**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**\n\nMiền chấp nhận được rỗng.\n\n**Giải thích toán học:** Xét tại dòng của biến ra (có vế phải âm), toàn bộ hệ số của các biến phi cơ sở đều mang dấu trừ ($-$) hoặc bằng $0$. Không có biến nào có khả năng làm biến vào để xoay và bù đắp vi phạm này.")
+                    error_html("**Kết luận: Bài toán VÔ NGHIỆM (Infeasible)**\n\nMiền chấp nhận được rỗng.\n\n**Giải thích toán học:** Xét tại dòng của biến ra có vế phải âm (mũi tên hướng trái), toàn bộ hệ số của các biến phi cơ sở đều mang dấu trừ ($-$) hoặc bằng $0$. Không có biến nào có khả năng làm biến vào để xoay và bù đắp vi phạm này.")
                 else: 
                     error_html(f"Trạng thái không xác định: `{status}`.")
                 break
