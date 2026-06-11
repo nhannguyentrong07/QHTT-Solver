@@ -31,13 +31,17 @@ if not is_feasible:
     
     # 1. Khởi tạo Pha 1
     v_delta, C_delta, D_pha1, non_basic_pha1 = khoi_tao_pha_1(D, non_basic)
-    st.latex(tao_latex_tu_vung_hien_tai(v_delta, C_delta, D_pha1, B, basic, non_basic_pha1))
     
     # 2. Xoay bắt buộc lần 1
-    j_in, i_out = buoc_xoay_khoi_tao_pha_1(B, non_basic_pha1)
-    st.write(f"**Xoay khởi tạo bắt buộc (Biến vào $x_0$, biến ra ${basic[i_out]}$):**")
+    j_in_khoi_tao, i_out_khoi_tao = buoc_xoay_khoi_tao_pha_1(B, non_basic_pha1)
+    st.write(f"**Xoay khởi tạo bắt buộc (Biến vào $x_0$, biến ra ${basic[i_out_khoi_tao]}$):**")
+    
+    # ĐÂY LÀ DÒNG LỆNH BỊ THIẾU Ở BẢN TRƯỚC: In Từ vựng xuất phát kèm đánh dấu mũi tên
+    st.latex(tao_latex_tu_vung_hien_tai(v_delta, C_delta, D_pha1, B, basic, non_basic_pha1, j_in_khoi_tao, i_out_khoi_tao))
+    
+    # Thực hiện phép toán đại số
     v_delta, C_delta, D_pha1, B, basic, non_basic_pha1 = thuc_hien_phep_xoay(
-        v_delta, C_delta, D_pha1, B, basic, non_basic_pha1, j_in, i_out
+        v_delta, C_delta, D_pha1, B, basic, non_basic_pha1, j_in_khoi_tao, i_out_khoi_tao
     )
     
     # 3. Vòng lặp giải Pha 1
@@ -60,7 +64,7 @@ if not is_feasible:
     st.write("### PHA 2: Tối ưu bài toán gốc")
     v, C, D, non_basic = chuyen_tu_pha1_sang_pha2(D_pha1, B, basic, non_basic_pha1, c_input)
 
-# --- VÒNG LẶP PHA 2 (Hoặc Đơn hình gốc nếu đã khả thi từ đầu) ---
+# --- VÒNG LẶP PHA 2 ---
 iter_p2 = 1
 while True:
     status, j_in, i_out = tim_phan_tu_truc_don_hinh_goc(C, D, B)
