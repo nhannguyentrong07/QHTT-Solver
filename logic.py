@@ -37,7 +37,7 @@ def tim_phan_tu_truc_doi_ngau(C, D, B):
     for i, b_val in enumerate(B):
         if b_val < 0:
             i_out = i
-            break # Quy tắc Bland cho Đối ngẫu: Chọn biến ra đầu tiên bị âm
+            break
             
     if i_out == -1: return "FEASIBLE", -1, -1
     
@@ -49,7 +49,10 @@ def tim_phan_tu_truc_doi_ngau(C, D, B):
             if min_ratio is None or ratio < min_ratio:
                 min_ratio = ratio
                 j_in = j
-    if j_in == -1: return "INFEASIBLE", -1, -1
+                
+    # CHỖ SỬA ĐÂY: Trả về i_out thay vì -1 để hệ thống biết đường vẽ mũi tên
+    if j_in == -1: return "INFEASIBLE", -1, i_out 
+    
     return "PIVOT", j_in, i_out
 
 def tao_latex_tu_vung(v, C, D, B, basic, non_basic, j_in=-1, i_out=-1, is_p1=False, is_dual=False):
