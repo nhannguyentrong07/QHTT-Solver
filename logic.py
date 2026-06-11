@@ -43,7 +43,7 @@ def format_frac(f):
     return str(f.numerator) if f.denominator == 1 else f"{f.numerator}/{f.denominator}"
 
 def tao_latex_tu_vung_hien_tai(v, C, D, B, basic_vars, non_basic_vars, j_in=-1, i_out=-1):
-    """Tạo mã LaTeX theo chuẩn, tự động gắn mũi tên và khoanh tròn phần tử trục"""
+    """Tạo mã LaTeX theo chuẩn, gắn mũi tên, khoanh tròn phần tử trục và in tỷ số ràng buộc"""
     lines = []
     
     # Dòng z
@@ -51,10 +51,12 @@ def tao_latex_tu_vung_hien_tai(v, C, D, B, basic_vars, non_basic_vars, j_in=-1, 
     for j, c_val in enumerate(C):
         if c_val == 0: continue
         sign = "+" if c_val > 0 else "-"
-        # Nếu là biến vào, gắn mũi tên xuống
         var_str = f"\\overset{{\\downarrow}}{{{non_basic_vars[j]}}}" if j == j_in else non_basic_vars[j]
         val_str = "" if abs(c_val) == 1 else format_frac(abs(c_val))
         z_line += f"& {sign} {val_str}{var_str} "
+    
+    # Thêm một ô trống ở cuối dòng z để căn lề cột tỷ số
+    z_line += "& "
     lines.append(z_line)
     lines.append("\\hline")
     
@@ -68,12 +70,21 @@ def tao_latex_tu_vung_hien_tai(v, C, D, B, basic_vars, non_basic_vars, j_in=-1, 
             sign = "+" if d_val > 0 else "-"
             val_str = "" if abs(d_val) == 1 else format_frac(abs(d_val))
             
-            # Nếu là phần tử trục, đóng khung
+            # Đóng khung phần tử trục
             if i == i_out and j == j_in:
                 row_line += f"& {sign} \\boxed{{{val_str}{non_basic_vars[j]}}} "
             else:
                 row_line += f"& {sign} {val_str}{non_basic_vars[j]} "
+                
+        # TÍNH VÀ IN TỶ SỐ RÀNG BUỘC (Chỉ tính khi có biến vào và hệ số âm)
+        ratio_str = "& " # Mặc định để trống nếu không xét
+        if j_in != -1 and D[i][j_in] < Fraction(0):
+            ratio_val = B[i] / abs(D[i][j_in])
+            ratio_str = f"& \\quad ({format_frac(ratio_val)})"
+            
+        row_line += ratio_str
         lines.append(row_line)
         
-    col_format = "rrc" + "rc" * len(C)
+    # Thêm cột 'l' (left-aligned) ở cuối cùng để chứa tỷ số
+    col_format = "rrc" + "rc" * len(C) + "l"
     return "\\begin{array}{" + col_format + "}\n" + " \\\\\n".join(lines) + "\n\\end{array}"
