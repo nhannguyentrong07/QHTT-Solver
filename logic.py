@@ -39,3 +39,33 @@ def chuan_hoa_buoc_1_va_2(c, A, b, is_minimize, dau_rang_buoc):
             buoc_giai_thich.append(f"- Phát hiện vế phải của ràng buộc {i+1} âm ({b[i]}): Đã nhân cả 2 vế với -1 và đảo chiều bất đẳng thức.")
 
     return c_chuan, A_chuan, b_chuan, dau_chuan, buoc_giai_thich
+
+def tao_chuoi_latex(he_so, ten_bien):
+    """Biến đổi mảng hệ số thành chuỗi toán học định dạng chuẩn"""
+    terms = []
+    for i, c in enumerate(he_so):
+        if c == 0:
+            continue
+        
+        # Loại bỏ đuôi .0 nếu là số nguyên (ví dụ 3.0 thành 3)
+        c_val = int(c) if float(c).is_integer() else round(c, 4)
+        
+        # Ẩn số 1 đứng trước biến (ví dụ 1x thành x)
+        if abs(c_val) == 1:
+            term = ten_bien[i]
+        else:
+            term = f"{abs(c_val)}{ten_bien[i]}"
+            
+        # Xử lý dấu cộng/trừ
+        if not terms: # Hạng tử đầu tiên
+            if c_val < 0:
+                terms.append(f"-{term}")
+            else:
+                terms.append(term)
+        else: # Các hạng tử tiếp theo
+            if c_val < 0:
+                terms.append(f"- {term}")
+            else:
+                terms.append(f"+ {term}")
+                
+    return " ".join(terms) if terms else "0"
